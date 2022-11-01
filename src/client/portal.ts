@@ -1,91 +1,127 @@
 import {
-  ErrorSignal,
+  CandidateSignal,
+  DescriptionSignal,
   EventEmitter,
-  InfoSignal,
   EventListener,
+  RoomMember,
 } from "../lib.js";
-import { PeerConnection } from "./peer-connection.js";
 import { SignalingChannel } from "./signaler.js";
-
-/** Options for creating a `Portal` */
-export interface PortalOptions {
-  room: string;
-  url: URL;
-  rtc: RTCConfiguration;
-}
 
 /** The events that can happen on a `Portal` */
 export interface PortalEventMap {
   debug: [string, ...any[]];
   error: [Error];
-  connection: [PeerConnection];
-  disconnection: [PeerConnection];
-  info: [InfoSignal];
+
+  /** @unstable */
+  track: [RTCTrackEvent];
 }
 
-/** Create a portal between multiple clients in a specific "room" */
-export class Portal {
-  events = new EventEmitter();
-  connections = new Map<string, PeerConnection>();
+/** Options for creating a `Portal` */
+export interface PortalOptions {
   signaler: SignalingChannel;
-  options: PortalOptions;
+  target: RoomMember;
+  rtc: RTCConfiguration;
+}
 
+/** A process for connecting to another client through WebRTC via a signaller */
+export class Portal {
+  signaler: SignalingChannel;
+  target: RoomMember;
+  peer: RTCPeerConnection;
+  events = new EventEmitter();
+  makingOffer = false;
+  ignoreOffer = false;
+
+  /** Create a start negotiating a connection with a client */
   constructor(options: PortalOptions) {
-    this.options = options;
-    this.signaler = new SignalingChannel({
-      room: options.room,
-      url: options.url,
-    });
+    this.signaler = options.signaler;
+    this.target = options.target;
+    this.peer = new RTCPeerConnection(options.rtc);
 
-    this.onError = this.onError.bind(this);
-    this.onInfo = this.onInfo.bind(this);
-    this.onDebug = this.onDebug.bind(this);
+    this.onDescription = this.onDescription.bind(this);
+    this.onCandidate = this.onCandidate.bind(this);
 
-    this.signaler.addEventListener("error", this.onError);
-    this.signaler.addEventListener("info", this.onInfo);
-    this.signaler.addEventListener("debug", this.onDebug);
+    this.peer.onnegotiationneeded = async () => {
+      try {
+        this.makingOffer = true;
+        await this.peer.setLocalDescription();
+        this.signaler.send(
+          "description",
+          this.peer.localDescription,
+          this.target.id
+        );
+      } catch (error) {
+        this.emit("error", error as Error);
+      } finally {
+        this.makingOffer = false;
+      }
+    };
+
+    this.peer.onicecandidate = (event) => {
+      this.signaler.send("candidate", event.candidate, this.target.id);
+    };
+    this.peer.oniceconnectionstatechange = () => {
+      if (this.peer.iceConnectionState === "failed") {
+        this.peer.restartIce();
+      }
+    };
+    this.peer.ontrack = (event) => {
+      this.emit("track", event);
+    };
+
+    this.signaler.addEventListener("description", this.onDescription);
+    this.signaler.addEventListener("candidate", this.onCandidate);
   }
-  /** Close the portal and clean up */
+  /** Close the connection with the other client */
   close() {
-    for (const connection of this.connections.values()) connection.close();
-    this.signaler.removeEventListener("error", this.onError);
-    this.signaler.removeEventListener("info", this.onInfo);
+    this.signaler.removeEventListener("description", this.onDescription);
+    this.signaler.removeEventListener("candidate", this.onCandidate);
+    this.peer.close();
   }
 
-  /** Listen for "info" signals and create/destroy connections accordingly */
-  onInfo(payload: InfoSignal) {
-    this.emit("info", payload);
-    const activeIds = new Set();
-    for (const member of payload.members) {
-      activeIds.add(member.id);
+  //
+  // Negotiating
+  //
+  async onDescription(payload: DescriptionSignal, from: string | null) {
+    if (from !== this.target.id) return;
 
-      if (this.connections.has(member.id)) continue;
+    const offerCollision =
+      payload.type === "offer" &&
+      (this.makingOffer || this.peer.signalingState !== "stable");
 
-      const connection = new PeerConnection({
-        rtc: this.options.rtc,
-        signaler: this.signaler,
-        target: member,
-      });
-      this.connections.set(member.id, connection);
-      this.emit("connection", connection);
-    }
+    this.ignoreOffer = !this.target.polite && offerCollision;
+    if (this.ignoreOffer) return;
 
-    const toRemove = Array.from(this.connections).filter(
-      ([id]) => !activeIds.has(id)
-    );
+    await this.peer.setRemoteDescription(payload);
 
-    for (const [id, connection] of toRemove) {
-      connection.close();
-      this.connections.delete(id);
-      this.emit("disconnection", connection);
+    if (payload.type === "offer") {
+      await this.peer.setLocalDescription();
+      this.signaler.send(
+        "description",
+        this.peer.localDescription,
+        this.target.id
+      );
     }
   }
-  onError(error: Error) {
-    this.close();
-    this.emit("error", error);
+  async onCandidate(payload: CandidateSignal, from: string | null) {
+    if (from !== this.target.id) return;
+
+    try {
+      await this.peer.addIceCandidate(payload);
+    } catch (error) {
+      if (!this.ignoreOffer) this.emit("error", error as Error);
+    }
   }
-  onDebug(message: string, ...args: unknown[]) {
-    this.emit("debug", message, ...args);
+
+  //
+  // Helpers
+  //
+
+  /** @unstable */
+  addMediaStream(stream: MediaStream) {
+    for (const track of stream.getTracks()) {
+      this.peer.addTrack(track, stream);
+    }
   }
 
   //

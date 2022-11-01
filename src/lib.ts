@@ -1,6 +1,6 @@
 export type EventListener<T extends any[] = any> = (...args: T) => void;
 
-// TODO: better generics / mixin
+// TODO: better generics integration / a mixin / decorator
 
 export class EventEmitter {
   #listeners = new Map<string, EventListener[]>();
@@ -17,27 +17,6 @@ export class EventEmitter {
   emit(name: string, ...args: unknown[]) {
     this.#listeners.get(name)?.forEach((l) => l(...args));
   }
-
-  // static mixin<T extends Record<string, any[]>>(base?: SomeClass) {
-  //   return class extends (base ?? class {}) {
-  //     events = new EventEmitter();
-  //     addEventListener<K extends keyof T>(
-  //       name: K,
-  //       listener: EventListener<T[K]>
-  //     ) {
-  //       this.events.addEventListener(name as string, listener);
-  //     }
-  //     removeEventListener<K extends keyof T>(
-  //       name: K,
-  //       listener: EventListener<T[K]>
-  //     ) {
-  //       this.events.removeEventListener(name as string, listener);
-  //     }
-  //     emit<K extends keyof T>(name: K, ...args: T[K]) {
-  //       this.events.emit(name as string, ...args);
-  //     }
-  //   };
-  // }
 }
 
 export interface RoomMember {
@@ -59,6 +38,7 @@ export function pause(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** @unstable */
 export function debounce(ms: number, fn: () => void) {
   let timerid: any = null;
   return () => {

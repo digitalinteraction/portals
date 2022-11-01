@@ -1,8 +1,13 @@
-import { Portal } from "../dist/client.js";
+import { PortalGun, debounce } from "../src/client.js";
 
 //
-// An example client that connects to the PortalServer and recieves connections
+// An example client that connects to the PortalServer and receives connections
 //
+
+const grid = document.getElementById("grid");
+const title = document.getElementById("title");
+const version = document.getElementById("version");
+version.innerText = "0.1";
 
 const rtc = {
   iceServers: [
@@ -12,33 +17,98 @@ const rtc = {
 };
 
 async function main() {
+  const url = new URL(location.href);
+  const room = "home";
+  const server = new URL("portal", location.href);
+  server.protocol = server.protocol.replace(/^http/, "ws");
+
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { width: 1280, height: 720 },
   });
 
-  const room = "home";
-  const url = new URL("portal", location.href);
-  url.protocol = serverUrl.protocol.replace(/^http/, "ws");
+  if (url.searchParams.has("self")) {
+    const localVideo = document.getElementById("localVideo");
+    localVideo.removeAttribute("aria-hidden");
+    localVideo.srcObject = stream;
+  }
 
-  const portal = new Portal({ room, url, rtc });
+  const portal = new PortalGun({ room, url: server, rtc });
 
   portal.addEventListener("connection", (connection) => {
     connection.addMediaStream(stream);
-    connection.addEventListener("track", (track) =>
-      renderTrack(connection, track)
-    );
+    connection.peer.addEventListener("track", (event) => {
+      event.track.onunmute = () => {
+        updatePeer(connection.target.id, event.streams[0]);
+      };
+    });
   });
 
   portal.addEventListener("disconnection", (connection) =>
-    renderTrack(connection, null)
+    updatePeer(connection.target.id, null)
   );
   portal.addEventListener("info", (info) => updateState(info));
   portal.addEventListener("debug", console.debug);
   portal.addEventListener("error", console.error);
+
+  window.addEventListener(
+    "resize",
+    debounce(200, () => {
+      console.log("onResize");
+      updateGrid(grid.children.length);
+    })
+  );
 }
 
-function renderTrack(connection, track) {
-  console.log("renderTrack", connection, track);
+/** @param {string} id  @param {MediaStream} stream */
+function updatePeer(id, stream) {
+  console.log("setRemoteStream", id);
+
+  /** @type {HTMLVideoElement} */
+  let elem = document.querySelector(`#grid > [data-video="${id}"]`);
+
+  if (stream) {
+    if (!elem) {
+      elem = document.createElement("video");
+      elem.muted = true;
+      elem.autoplay = true;
+      elem.dataset.video = id;
+      grid.appendChild(elem);
+    }
+
+    elem.srcObject = stream;
+  } else if (elem) {
+    grid.removeChild(elem);
+  }
+
+  updateGrid(grid.children.length);
+}
+
+function updateGrid(count) {
+  const aspect = 16 / 9;
+  const { innerHeight, innerWidth } = window;
+
+  let [columns, rows] = [1, 1];
+  for (let requiredColumns = 1; requiredColumns <= count; requiredColumns++) {
+    const w = innerWidth / requiredColumns;
+    const h = w / aspect;
+    const requiredRows = Math.ceil(count / requiredColumns);
+    const requiredHeight = requiredRows * h;
+    if (requiredHeight <= innerHeight) {
+      [columns, rows] = [requiredColumns, requiredRows];
+      break;
+    }
+  }
+
+  grid.style = `--columns: ${columns};`;
+
+  if (count > 0) {
+    title.setAttribute("aria-hidden", "true");
+    version.setAttribute("aria-hidden", "true");
+  } else {
+    title.removeAttribute("aria-hidden");
+    version.removeAttribute("aria-hidden");
+    title.textContent;
+  }
 }
 
 function updateState(info) {

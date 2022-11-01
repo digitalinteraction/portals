@@ -1,4 +1,4 @@
-#!/usr/bin/env node --loader=ts-node/esm
+#!/usr/bin/env node
 
 import http from "http";
 import path from "path";
@@ -13,7 +13,7 @@ const app = express()
   .use(express.text());
 
 // Hack to bundle the javascript
-app.get("/app.js", async (req, res) => {
+app.get("/app.js", async (_req, res) => {
   res.contentType("text/javascript");
   const file = new URL("client.js", import.meta.url);
   const app = await esbuild.build({

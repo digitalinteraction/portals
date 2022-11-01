@@ -105,6 +105,3 @@ export class PortalServer {
     this.#events.emit(name, ...args);
   }
 }
-
-// Easter egg
-export { PortalServer as PortalGun };
