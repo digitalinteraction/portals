@@ -1,8 +1,13 @@
 {
   "actions" : {
+    "build" : {
+      "enabled" : true,
+      "script" : "#!\/bin\/sh\nnpm run build:lib"
+    },
     "run" : {
       "enabled" : true,
       "script" : "#!\/bin\/sh\nnpm run serve:example"
     }
-  }
+  },
+  "buildBeforeRunning" : true
 }

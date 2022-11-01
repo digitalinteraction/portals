@@ -6,7 +6,7 @@ import url from "url";
 import esbuild from "esbuild";
 import express from "express";
 
-import { NodePortalServer } from "../dist/node_server.js";
+import { NodePortalServer } from "@openlab/portals/node-server.js";
 
 const app = express()
   .use(express.static(path.dirname(url.fileURLToPath(import.meta.url))))

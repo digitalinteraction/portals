@@ -1,4 +1,4 @@
-import { PortalGun, debounce } from "../src/client.js";
+import { PortalGun, debounce } from "@openlab/portals/client.js";
 
 //
 // An example client that connects to the PortalServer and receives connections
@@ -32,23 +32,23 @@ async function main() {
     localVideo.srcObject = stream;
   }
 
-  const portal = new PortalGun({ room, url: server, rtc });
+  const portalGun = new PortalGun({ room, url: server, rtc });
 
-  portal.addEventListener("connection", (connection) => {
-    connection.addMediaStream(stream);
-    connection.peer.addEventListener("track", (event) => {
+  portalGun.addEventListener("connection", (portal) => {
+    portal.addMediaStream(stream);
+    portal.peer.addEventListener("track", (event) => {
       event.track.onunmute = () => {
-        updatePeer(connection.target.id, event.streams[0]);
+        updatePeer(portal.target.id, event.streams[0]);
       };
     });
   });
 
-  portal.addEventListener("disconnection", (connection) =>
-    updatePeer(connection.target.id, null)
+  portalGun.addEventListener("disconnection", (portal) =>
+    updatePeer(portal.target.id, null)
   );
-  portal.addEventListener("info", (info) => updateState(info));
-  portal.addEventListener("debug", console.debug);
-  portal.addEventListener("error", console.error);
+  portalGun.addEventListener("info", (info) => updateState(info));
+  portalGun.addEventListener("debug", console.debug);
+  portalGun.addEventListener("error", console.error);
 
   window.addEventListener(
     "resize",
