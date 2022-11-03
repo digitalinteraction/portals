@@ -1,25 +1,25 @@
-import { ErrorSignal, EventEmitter, EventListener } from "../lib.js";
-import { Room } from "./room.js";
-import { PortalMessage, Traveller } from "./types.js";
+import { ErrorSignal, EventEmitter, EventListener } from '../lib.js'
+import { Room } from './room.js'
+import { PortalMessage, Traveller } from './types.js'
 
 /** The events that can happen on a `PortalServer` */
 export interface PortalServerEventMap {
-  debug: [string, ...any[]];
-  error: [Error];
+  debug: [string, ...any[]]
+  error: [Error]
 }
 
 /** Options for creating a `PortalServer` */
 export type PortalServerOptions = {
-  rooms: string[];
-};
+  rooms: string[]
+}
 
 /** An abstract server for connecting peers in rooms and negotiating WebRTC connections */
 export class PortalServer {
-  #rooms = new Map<string, Room>();
-  #events = new EventEmitter();
+  #rooms = new Map<string, Room>()
+  #events = new EventEmitter()
 
   constructor(options: PortalServerOptions) {
-    for (const id of options.rooms) this.#rooms.set(id, new Room(id));
+    for (const id of options.rooms) this.#rooms.set(id, new Room(id))
   }
 
   close() {
@@ -28,59 +28,59 @@ export class PortalServer {
 
   /** Tell the server about a new connection */
   onConnection(traveller: Traveller) {
-    const room = this.#rooms.get(traveller.room);
+    const room = this.#rooms.get(traveller.room)
     if (!room) {
-      this.emit("debug", `Room not found ${traveller.room}`);
-      traveller.send<ErrorSignal>("error", { code: "room_not_found" });
-      return;
+      this.emit('debug', `Room not found ${traveller.room}`)
+      traveller.send<ErrorSignal>('error', { code: 'room_not_found' })
+      return
     }
 
-    this.emit("debug", `socket@connect id=${traveller.id}`);
+    this.emit('debug', `socket@connect id=${traveller.id}`)
 
     // TODO: boot out old traveller?
 
-    room.members.set(traveller.id, traveller);
-    room.update();
+    room.members.set(traveller.id, traveller)
+    room.update()
   }
 
   /** Tell the server about a message to be transmitted */
   onMessage(traveller: Traveller, { type, payload, target }: PortalMessage) {
-    const room = this.#rooms.get(traveller.room);
-    if (!room) throw new Error("Room not found");
+    const room = this.#rooms.get(traveller.room)
+    if (!room) throw new Error('Room not found')
 
     this.emit(
-      "debug",
+      'debug',
       `traveller@message id=${traveller.id} type=${type} to=${target}`
-    );
+    )
 
-    if (type === "ping") {
-      traveller.send("pong");
-      return;
+    if (type === 'ping') {
+      traveller.send('pong')
+      return
     }
 
     if (!target) {
-      this.emit("error", new Error("traveller@message untargeted message"));
-      return;
+      this.emit('error', new Error('traveller@message untargeted message'))
+      return
     }
 
-    const other = room.members.get(target);
+    const other = room.members.get(target)
     if (!other) {
-      this.emit("error", new Error("traveller@message target not online"));
-      return;
+      this.emit('error', new Error('traveller@message target not online'))
+      return
     }
 
-    other.send(type, payload, traveller.id);
+    other.send(type, payload, traveller.id)
   }
 
   /** Tell the server about a closed connection */
   onClose(traveller: Traveller) {
-    const room = this.#rooms.get(traveller.room);
-    if (!room) throw new Error("Room not found");
+    const room = this.#rooms.get(traveller.room)
+    if (!room) throw new Error('Room not found')
 
-    this.emit("debug", `traveller@close id=${traveller.id}`);
+    this.emit('debug', `traveller@close id=${traveller.id}`)
 
-    room.members.delete(traveller.id);
-    room.update();
+    room.members.delete(traveller.id)
+    room.update()
   }
 
   //
@@ -90,18 +90,18 @@ export class PortalServer {
     name: K,
     listener: EventListener<PortalServerEventMap[K]>
   ) {
-    this.#events.addEventListener(name, listener);
+    this.#events.addEventListener(name, listener)
   }
   removeEventListener<K extends keyof PortalServerEventMap>(
     name: K,
     listener: EventListener<PortalServerEventMap[K]>
   ) {
-    this.#events.removeEventListener(name, listener);
+    this.#events.removeEventListener(name, listener)
   }
   emit<K extends keyof PortalServerEventMap>(
     name: K,
     ...args: PortalServerEventMap[K]
   ) {
-    this.#events.emit(name, ...args);
+    this.#events.emit(name, ...args)
   }
 }

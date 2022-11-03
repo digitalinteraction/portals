@@ -13,24 +13,23 @@ tailored for Node.js and [ws](https://github.com/websockets/ws).
 **Node.js + express + ws**
 
 ```js
-import http from "http";
-import path from "path";
-import url from "url";
-import esbuild from "esbuild";
-import express from "express";
+import http from 'http'
+import path from 'path'
+import url from 'url'
+import esbuild from 'esbuild'
+import express from 'express'
 
-import { NodePortalServer } from "@openlab/portals/node-server.js";
+import { NodePortalServer } from '@openlab/portals/node-server.js'
 
 const app = express()
   .use(express.static(path.dirname(url.fileURLToPath(import.meta.url))))
-  .use(express.text());
+  .use(express.text())
 
-const rooms = ["coffee-chat", "home", "misc"];
-const server = http.createServer(app);
-const portal = new NodePortalServer({ server, path: "/portal", rooms });
+const rooms = ['coffee-chat', 'home', 'misc']
+const server = http.createServer(app)
+const portal = new NodePortalServer({ server, path: '/portal', rooms })
 
-server.listen(8080, () => console.log("Listening on :8080"));
-server.on("close", () => portal.close());
+server.listen(8080, () => console.log('Listening on :8080'))
 ```
 
 ## Client
@@ -39,53 +38,53 @@ On the client, there is a library for connecting to the signalling server,
 connecting to a room and handling connections and disconnections within that room.
 
 ```js
-import { PortalGun } from "../src/client.js";
+import { PortalGun } from '../src/client.js'
 
 const rtc = {
   iceServers: [
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
   ],
-};
+}
 
 async function main() {
   // Determine the room to join somehow
-  const url = new URL(location.href);
-  const room = url.searchParams.get("room");
+  const url = new URL(location.href)
+  const room = url.searchParams.get('room')
 
   // Create a WebSocket URL to the PortalServer
-  const server = new URL("portal", location.href);
-  server.protocol = server.protocol.replace(/^http/, "ws");
+  const server = new URL('portal', location.href)
+  server.protocol = server.protocol.replace(/^http/, 'ws')
 
   // Request a MediaStream from the client's webcam
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { width: 1280, height: 720 },
-  });
+  })
 
   // Create the portal gun
-  const portalGun = new PortalGun({ room, url: server, rtc });
+  const portalGun = new PortalGun({ room, url: server, rtc })
 
-  portalGun.addEventListener("connection", (portal) => {
+  portalGun.addEventListener('connection', (portal) => {
     // Add the local MediaStream to send video through the portal
     // Note: This API is currently unstable
-    portal.addMediaStream(stream);
+    portal.addMediaStream(stream)
 
     // Listen for tracks from the peer to recieve video through the portal
-    portal.peer.addEventListener("track", (event) => {
+    portal.peer.addEventListener('track', (event) => {
       event.track.onunmute = () => {
-        console.debug("@connected", portal.target.id, event.streams[0]);
+        console.debug('@connected', portal.target.id, event.streams[0])
         // Render the track somehow
-      };
-    });
-  });
+      }
+    })
+  })
 
   // Stop rendering a peer that has disconnected
-  portalGun.addEventListener("disconnection", (portal) => {
-    console.debug("@disconnection", portal.target.id, null);
-  });
+  portalGun.addEventListener('disconnection', (portal) => {
+    console.debug('@disconnection', portal.target.id, null)
+  })
 }
 
-main();
+main()
 ```
 
 You create a `PortalGun` which is responsible for talking to the signalling server and telling you about new and closed connections, known as "portals".
@@ -120,39 +119,39 @@ There are extra hooks for debugging, exposed as events:
 - `debug` (string) - outputs debug messages
 
 ```ts
-import { CustomSocketServer, CustomSocket } from "custom-socket-lib";
-import { PortalServer, Traveller } from "@openlab/portals/server.js";
+import { CustomSocketServer, CustomSocket } from 'custom-socket-lib'
+import { PortalServer, Traveller } from '@openlab/portals/server.js'
 
-const portals = new PortalServer({ rooms: ["home"] });
+const portals = new PortalServer({ rooms: ['home'] })
 function getConnection(socket: CustomSocket, request: Request): Traveller {
-  const { id, room } = "/* get from socket */";
+  const { id, room } = '/* get from socket */'
   function send(type, payload, from) {
-    socket.send(JSON.stringify({ type, [type]: payload, from }));
+    socket.send(JSON.stringify({ type, [type]: payload, from }))
   }
-  return { id, room, send };
+  return { id, room, send }
 }
 
-const sockets = new CustomSocketServer(/* ... */);
-sockets.addEventListener("connection", (socket) => {
+const sockets = new CustomSocketServer(/* ... */)
+sockets.addEventListener('connection', (socket) => {
   // 1. Tell portals about the new connection
-  const connection = getConnection(socket);
-  portals.onConnection(connection);
+  const connection = getConnection(socket)
+  portals.onConnection(connection)
 
   // 2. Tell portals about new messages
-  socket.addEventListener("message", (message) => {
-    const { type, [type]: payload, target = null } = JSON.parse(message);
-    portals.onMessage(connection, type, payload, target);
-  });
+  socket.addEventListener('message', (message) => {
+    const { type, [type]: payload, target = null } = JSON.parse(message)
+    portals.onMessage(connection, type, payload, target)
+  })
 
   // 3. Tell portals about connections closing
-  socket.addEventListener("close", () => {
-    portals.onClose(connection);
-  });
-});
+  socket.addEventListener('close', () => {
+    portals.onClose(connection)
+  })
+})
 
 // Optionally debug things
-portals.addEventListener("error", (error) => console.error(error));
-portals.addEventListener("debug", (message) => console.debug(message));
+portals.addEventListener('error', (error) => console.error(error))
+portals.addEventListener('debug', (message) => console.debug(message))
 ```
 
 You wrap your library's transport into a `Traveller` object that the library
