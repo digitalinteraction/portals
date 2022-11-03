@@ -43,6 +43,6 @@ export function debounce(ms: number, fn: () => void) {
   let timerid: any = null
   return () => {
     if (timerid !== null) clearTimeout(timerid)
-    timerid = window.setTimeout(fn, ms)
+    timerid = setTimeout(fn, ms)
   }
 }

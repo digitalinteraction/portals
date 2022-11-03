@@ -1,5 +1,9 @@
 import { EventEmitter, EventListener, InfoSignal } from '../lib.js'
 
+const PING_TIMEOUT_MS = 5_000
+const PING_INTERVAL = 10_000
+const RETRY_TIMEOUT = 2_000
+
 export type SignalingChannelEventMap = Record<string, unknown[]> & {
   debug: [string, ...unknown[]]
   error: [Error]
@@ -35,8 +39,9 @@ export class SignalingChannel {
   socket: WebSocket
   upstream: string[] = []
   events = new EventEmitter()
-  id: string | undefined = undefined
+  id?: string
   pingCounter = 0
+  pingTimeout?: any
 
   composeMessage: SignalingMessageComposer
   parseMessage: SignalingMessageParser
@@ -52,7 +57,14 @@ export class SignalingChannel {
       this.id = payload.id
     })
 
-    setInterval(() => this.send('ping', ++this.pingCounter), 10_000)
+    setInterval(() => this.sendPing(url), PING_INTERVAL)
+
+    this.addEventListener('pong', (pingNumber) => {
+      if (this.pingTimeout && this.pingCounter === pingNumber) {
+        clearTimeout(this.pingTimeout)
+        this.pingTimeout = undefined
+      }
+    })
   }
 
   /** Attempt to connect to the `PortalServer` */
@@ -83,7 +95,7 @@ export class SignalingChannel {
       setTimeout(() => {
         this.emit('debug', 'signaler reconnecting...')
         this.connect(url)
-      }, 2_000)
+      }, RETRY_TIMEOUT)
     }
 
     this.socket.onerror = (event) => {
@@ -107,6 +119,17 @@ export class SignalingChannel {
     } else {
       this.upstream.push(message)
     }
+  }
+
+  sendPing(url: URL) {
+    this.pingTimeout = setTimeout(() => {
+      setTimeout(() => {
+        this.emit('debug', 'ping failed, reconnecting...')
+        this.connect(url)
+      }, RETRY_TIMEOUT)
+    }, PING_TIMEOUT_MS)
+
+    this.send('ping', ++this.pingCounter)
   }
 
   //

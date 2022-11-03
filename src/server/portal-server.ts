@@ -53,8 +53,8 @@ export class PortalServer {
       `traveller@message id=${traveller.id} type=${type} to=${target}`
     )
 
-    if (type === 'ping') {
-      traveller.send('pong')
+    if (type === 'ping' && typeof payload === 'number') {
+      traveller.send('pong', payload)
       return
     }
 

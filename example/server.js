@@ -3,6 +3,7 @@
 import http from 'http'
 import path from 'path'
 import url from 'url'
+import esbuild from 'esbuild'
 import express from 'express'
 
 import { NodePortalServer } from '@openlab/portals/node-server.js'
