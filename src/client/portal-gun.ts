@@ -1,12 +1,13 @@
 import { EventEmitter, InfoSignal, EventListener } from "../lib.js";
 import { Portal } from "./portal.js";
-import { SignalingChannel } from "./signaler.js";
+import { SignalingChannel, SignalingMessageComposer } from "./signaler.js";
 
 /** Options for creating a `PortalGun` */
 export interface PortalGunOptions {
   room: string;
   url: URL;
   rtc: RTCConfiguration;
+  composeMessage?: SignalingMessageComposer;
 }
 
 /** The events that can happen on a `PortalGun` */
@@ -30,6 +31,7 @@ export class PortalGun {
     this.signaler = new SignalingChannel({
       room: options.room,
       url: options.url,
+      composeMessage: options.composeMessage,
     });
 
     this.onError = this.onError.bind(this);

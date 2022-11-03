@@ -5,10 +5,29 @@ export type SignalingChannelEventMap = Record<string, unknown[]> & {
   error: [Error];
 };
 
+export interface SignalingMessageComposer {
+  (type: string, payload: unknown, target?: string): string;
+}
+export interface SignalingMessageParser<T = unknown> {
+  (body: string): { type: string; payload: T; from?: string };
+}
+
+const composeMessage: SignalingMessageComposer = (type, payload, target) => {
+  return JSON.stringify({ type, [type]: payload, target });
+};
+
+const parseMessage: SignalingMessageParser = (body) => {
+  const { type, [type]: payload, from } = JSON.parse(body);
+  return { type, payload, from };
+};
+
 /** Options for creating a `SignalingChannel` */
 export interface SignalingOptions {
   room: string;
   url: URL;
+
+  /** @unstable */ composeMessage?: SignalingMessageComposer;
+  /** @unstable */ parseMessage?: SignalingMessageParser;
 }
 
 /** A connection to a `PortalServer` to manage connections and negotiating */
@@ -19,10 +38,15 @@ export class SignalingChannel {
   id: string | undefined = undefined;
   pingCounter = 0;
 
+  composeMessage: SignalingMessageComposer;
+  parseMessage: SignalingMessageParser;
+
   constructor(options: SignalingOptions) {
     const url = new URL(options.url);
     url.searchParams.set("room", options.room);
     this.socket = this.connect(url);
+    this.composeMessage = options.composeMessage ?? composeMessage;
+    this.parseMessage = options.parseMessage ?? parseMessage;
 
     this.addEventListener("info", (payload: InfoSignal) => {
       this.id = payload.id;
@@ -43,7 +67,7 @@ export class SignalingChannel {
     this.socket = new WebSocket(socketUrl);
 
     this.socket.onmessage = (event) => {
-      const { type, [type]: payload, from } = JSON.parse(event.data);
+      const { type, payload, from } = this.parseMessage(event.data);
       this.emit("debug", `signaler@${type}`);
       this.emit(type, payload, from);
     };
@@ -71,7 +95,7 @@ export class SignalingChannel {
   }
 
   /** Send a message to the `PortalServer`, optionally to a specific target */
-  send(type: string, payload: any = {}, target: string | null = null) {
+  send(type: string, payload: any = {}, target?: string) {
     const message = JSON.stringify({
       type,
       [type]: payload,
