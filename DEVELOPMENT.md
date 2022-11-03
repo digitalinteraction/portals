@@ -1,9 +1,11 @@
 # Development
 
-Working towards
-https://github.com/digitalinteraction/deconf/blob/main/experiments/peers/portals-lib.md
+To develop on this repo you will need to have Node.js installed on your dev machine.
+This guide assumes you have the repo checked out and are on macOS.
 
-## setup
+## Setup
+
+You'll only need to follow this setup once for your dev machine.
 
 ```sh
 # cd to/this/folder
@@ -15,7 +17,9 @@ npm install
 npx husky install
 ```
 
-## regular use
+## Regular use
+
+These are the commands you'll regularly run to develop the API, in no particular order.
 
 ```sh
 # build the libraries
@@ -28,7 +32,7 @@ npm run build:lib
 npm run serve:example
 ```
 
-## code formatting
+## Code formatting
 
 This repo uses [Prettier](https://prettier.io/),
 [husky](https://github.com/typicode/husky)
@@ -39,7 +43,7 @@ or you can manually run the formatter with `npm run format` if you like.
 
 Prettier ignores files using .prettierignore and skips lines after a // prettier-ignore comment.
 
-## release
+## Release
 
 Use the `npm version` command to cut a new release of the library, then publish to NPM.
 First make sure git is clean and changes are documented in [CHANGELOG.md](/CHANGELOG.md).
@@ -47,48 +51,10 @@ First make sure git is clean and changes are documented in [CHANGELOG.md](/CHANG
 ```sh
 # cd to/this/folder
 
+# Version the package which also builds the typescript
 npm version # major | minor | patch | --help
 
 git push --follow-tags
 
 npm publish
-```
-
-## future work
-
-- designing the server to be scalable
-  - can rooms be in redis somehow, or backed by socket.io?
-- dynamic rooms / API for existing rooms
-- Data connections
-- automated tests
-- explore Deno usage
-
-**better ping**
-
-```js
-const PING_TIMEOUT_MS = 30_000
-
-class SignalingChannel {
-  pingTimeout = null
-  pingCounter = null
-
-  setup() {
-    // ...
-
-    // Recieve a pong and cancel the timeout
-    this.on('pong', (pingNumber) => {
-      if (this.pingCounter === pingNumber && this.pingTimeout) {
-        clearTimeout(this.pingTimeout)
-      }
-    })
-  }
-
-  // Send the ping and trigger the timeout if no pong is recieved
-  sendPing() {
-    this.pingTimeout = setTimeout(() => {
-      // ping fail logic (e.g. restart connection)
-    }, PING_TIMEOUT_MS)
-    this.send('ping', ++this.pingCounter)
-  }
-}
 ```

@@ -2,6 +2,10 @@
 
 Portals is a pair of libraries for creating WebRTC connections between multiple parties, a "portal".
 
+```sh
+npm install @openlab/portals
+```
+
 > **portals.js** is ESM only.
 
 ## Server
@@ -31,13 +35,15 @@ const portal = new NodePortalServer({ server, path: '/portal', rooms })
 server.listen(8080, () => console.log('Listening on :8080'))
 ```
 
+> You'll need to `npm install express ws` to get the dependencies
+
 ## Client
 
 On the client, there is a library for connecting to the signalling server,
 connecting to a room and handling connections and disconnections within that room.
 
 ```js
-import { PortalGun } from '../src/client.js'
+import { NodePortalServer } from '@openlab/portals/client.js'
 
 const rtc = {
   iceServers: [
@@ -154,7 +160,7 @@ portals.addEventListener('debug', (message) => console.debug(message))
 ```
 
 You wrap your library's transport into a `Traveller` object that the library
-will store and use to send messages to clients as part of signalling.
+will store and use to send messages to clients.
 You can get the `id` or `room` from the connecting client or you can generate them.
 The client expects WebSocket messages in a certain format, defined below,
 so the `send` method should format them in this way.
@@ -185,7 +191,24 @@ It always has `type` as a string, then the "type" is used as a key is used to pu
 `from` is optional and may contain the id of the specific client that send the message.
 
 ```json
-{ "type": "ice", "ice": { "key": "value" }, "target": "abcdef" }
+{ "type": "ice", "ice": { "key": "value" }, "from": "abcdef" }
 ```
 
 On the client, you can pass a `parseMessage` method to parse a custom format your server might use.
+
+## Future work / ideas
+
+- designing the server to be horizontally scalable
+  - can rooms be in redis somehow, or backed by socket.io?
+- dynamic rooms / API for existing rooms
+- Data connections
+- add automated tests
+- explore Deno usage
+- pull rtc configuration from the server?
+- simplify payload structure?
+- explore what happens when MediaStreams break
+- abstract away from WebSockets?
+
+## Non-goals
+
+- Anything not peer-to-peer or more complicated topologies

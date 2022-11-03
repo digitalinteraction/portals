@@ -8,7 +8,8 @@
   "scripts": {
     "build:lib": "tsc",
     "serve:example": "./example/server.js",
-    "format": "prettier --write '**/*.{js,ts,tsx,json,css,md}'"
+    "format": "prettier --write '**/*.{js,ts,tsx,json,css,md}'",
+    "preversion": "npm run -s build:lib"
   },
   "workspaces": [
     "example"
