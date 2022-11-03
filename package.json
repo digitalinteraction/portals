@@ -14,6 +14,9 @@
   "workspaces": [
     "example"
   ],
+  "files": [
+    "dist/*"
+  ],
   "exports": {
     ".": "./dist/lib.js",
     "./*": "./dist/*"
