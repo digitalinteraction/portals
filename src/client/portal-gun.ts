@@ -1,6 +1,6 @@
 import { EventEmitter, InfoSignal, EventListener } from '../lib.js'
 import { Portal } from './portal.js'
-import { SignalingChannel, SignalingMessageComposer } from './signaler.js'
+import { SignalingChannel, SignalingMessageComposer } from './signaller.js'
 
 /** Options for creating a `PortalGun` */
 export interface PortalGunOptions {
@@ -37,16 +37,23 @@ export class PortalGun {
     this.onError = this.onError.bind(this)
     this.onInfo = this.onInfo.bind(this)
     this.onDebug = this.onDebug.bind(this)
+    this.onDisconnection = this.onDisconnection.bind(this)
+    this.onReconnection = this.onReconnection.bind(this)
 
     this.signaler.addEventListener('error', this.onError)
     this.signaler.addEventListener('info', this.onInfo)
     this.signaler.addEventListener('debug', this.onDebug)
+    this.signaler.addEventListener('disconnection', this.onReconnection)
+    this.signaler.addEventListener('reconnection', this.onReconnection)
   }
   /** Close the portal and clean up */
   close() {
     for (const connection of this.connections.values()) connection.close()
     this.signaler.removeEventListener('error', this.onError)
     this.signaler.removeEventListener('info', this.onInfo)
+    this.signaler.removeEventListener('debug', this.onDebug)
+    this.signaler.removeEventListener('disconnection', this.onReconnection)
+    this.signaler.removeEventListener('reconnection', this.onReconnection)
   }
 
   /** Listen for "info" signals and create/destroy connections accordingly */
@@ -56,7 +63,7 @@ export class PortalGun {
     for (const member of payload.members) {
       activeIds.add(member.id)
 
-      if (this.connections.has(member.id)) continue
+      this.connections.get(member.id)?.close()
 
       const connection = new Portal({
         rtc: this.options.rtc,
@@ -83,6 +90,12 @@ export class PortalGun {
   }
   onDebug(message: string, ...args: unknown[]) {
     this.emit('debug', message, ...args)
+  }
+  onDisconnection() {
+    // ...
+  }
+  onReconnection() {
+    // ...
   }
 
   //

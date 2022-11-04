@@ -235,6 +235,9 @@ Used as part of the WebRTC calling, [more info](https://developer.mozilla.org/en
 - simplify payload structure?
 - explore what happens when MediaStreams break
 - abstract away from WebSockets?
+- what to do with signaller 'disconnection' / 'reconnection' events
+  - rename current portal events to 'opened' / 'closed' ?
+- better name for 'signaller'
 
 ## Non-goals
 

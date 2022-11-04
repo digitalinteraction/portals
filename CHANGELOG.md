@@ -2,6 +2,12 @@
 
 This file contains notable changes to the project
 
+## 0.2.1
+
+**fixes**
+
+- Some connections were being skipped when the socket reconnected in the background
+
 ## 0.2.0
 
 **features**

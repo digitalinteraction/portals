@@ -7,6 +7,8 @@ const RETRY_TIMEOUT = 2_000
 export type SignalingChannelEventMap = Record<string, unknown[]> & {
   debug: [string, ...unknown[]]
   error: [Error]
+  disconnected: []
+  reconnected: []
 }
 
 export interface SignalingMessageComposer {
@@ -94,6 +96,7 @@ export class SignalingChannel {
       this.emit('debug', 'socket@close', event)
       setTimeout(() => {
         this.emit('debug', 'signaler reconnecting...')
+        this.emit('disconnected')
         this.connect(url)
       }, RETRY_TIMEOUT)
     }
@@ -125,6 +128,7 @@ export class SignalingChannel {
     this.pingTimeout = setTimeout(() => {
       setTimeout(() => {
         this.emit('debug', 'ping failed, reconnecting...')
+        this.emit('disconnected')
         this.connect(url)
       }, RETRY_TIMEOUT)
     }, PING_TIMEOUT_MS)

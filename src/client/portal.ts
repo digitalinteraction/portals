@@ -5,7 +5,7 @@ import {
   EventListener,
   RoomMember,
 } from '../lib.js'
-import { SignalingChannel } from './signaler.js'
+import { SignalingChannel } from './signaller.js'
 
 /** The events that can happen on a `Portal` */
 export interface PortalEventMap {
