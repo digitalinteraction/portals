@@ -1,6 +1,6 @@
 {
   "name": "@openlab/portals",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "publishConfig": {
     "access": "public"
@@ -19,8 +19,8 @@
   ],
   "exports": {
     ".": {
-      "types":"./dist/lib.d.ts",
-      "import":"./dist/lib.js"
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
     },
     "./*.js": {
       "types": "./dist/*.d.ts",
