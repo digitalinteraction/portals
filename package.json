@@ -18,8 +18,14 @@
     "dist/*"
   ],
   "exports": {
-    ".": "./dist/lib.js",
-    "./*": "./dist/*"
+    ".": {
+      "types":"./dist/lib.d.ts",
+      "import":"./dist/lib.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
+    }
   },
   "devDependencies": {
     "@types/node": "^16.18.3",
