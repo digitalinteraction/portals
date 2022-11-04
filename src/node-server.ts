@@ -52,7 +52,13 @@ export class NodePortalServer extends PortalServer {
         traveller.send<ErrorSignal>('error', { code: 'room_not_set' })
         return
       }
-      this.onConnection(traveller)
+
+      try {
+        this.onConnection(traveller)
+      } catch (error) {
+        this.handleTravellerError(error, traveller)
+        return
+      }
 
       socket.addEventListener('message', (event) => {
         try {
@@ -60,11 +66,15 @@ export class NodePortalServer extends PortalServer {
           const { type, [type]: payload, target } = JSON.parse(event.data)
           this.onMessage(traveller, { type, payload, target })
         } catch (error) {
-          this.emit('error', error as Error)
+          this.handleTravellerError(error, traveller)
         }
       })
       socket.addEventListener('close', () => {
-        this.onClose(traveller)
+        try {
+          this.onClose(traveller)
+        } catch (error) {
+          this.handleTravellerError(error, traveller)
+        }
       })
     })
 

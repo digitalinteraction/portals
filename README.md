@@ -196,6 +196,33 @@ It always has `type` as a string, then the "type" is used as a key is used to pu
 
 On the client, you can pass a `parseMessage` method to parse a custom format your server might use.
 
+## Signals
+
+There are types for the different messages that are sent up and down from the server, these are currently in [src/lib.ts](./src/lib.ts)
+
+**InfoSignal**
+
+Sent to clients when members join and leave the room.
+It contains the id of the client, the other members in the room
+and whether to be "nice" to them or not
+(used as part of the WebRTC call).
+
+**ErrorSignal**
+
+When the client did something wrong, it has an error
+which the client could use to rectify it, or let the developer know what to fix. Error codes:
+
+- `room_not_set` - sent when a client joined and didn't set the `?room` URL parameter.
+- `room_not_found` - sent when a client joined, messaged or left with a room that doesn't exist.
+
+**DescriptionSignal**
+
+Used as part of the WebRTC calling, [more info](https://developer.mozilla.org/en-US/docs/Web/API/RTCSessionDescription)
+
+**CandidateSignal**
+
+Used as part of the WebRTC calling, [more info](https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate)
+
 ## Future work / ideas
 
 - designing the server to be horizontally scalable

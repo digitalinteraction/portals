@@ -1,4 +1,5 @@
 import { ErrorSignal, EventEmitter, EventListener } from '../lib.js'
+import { RoomNotFoundError } from './errors.js'
 import { Room } from './room.js'
 import { PortalMessage, Traveller } from './types.js'
 
@@ -29,11 +30,7 @@ export class PortalServer {
   /** Tell the server about a new connection */
   onConnection(traveller: Traveller) {
     const room = this.#rooms.get(traveller.room)
-    if (!room) {
-      this.emit('debug', `Room not found ${traveller.room}`)
-      traveller.send<ErrorSignal>('error', { code: 'room_not_found' })
-      return
-    }
+    if (!room) throw new RoomNotFoundError(traveller.room)
 
     this.emit('debug', `socket@connect id=${traveller.id}`)
 
@@ -46,7 +43,7 @@ export class PortalServer {
   /** Tell the server about a message to be transmitted */
   onMessage(traveller: Traveller, { type, payload, target }: PortalMessage) {
     const room = this.#rooms.get(traveller.room)
-    if (!room) throw new Error('Room not found')
+    if (!room) throw new RoomNotFoundError(traveller.room)
 
     this.emit(
       'debug',
@@ -75,12 +72,22 @@ export class PortalServer {
   /** Tell the server about a closed connection */
   onClose(traveller: Traveller) {
     const room = this.#rooms.get(traveller.room)
-    if (!room) throw new Error('Room not found')
+    if (!room) throw new RoomNotFoundError(traveller.room)
 
     this.emit('debug', `traveller@close id=${traveller.id}`)
 
     room.members.delete(traveller.id)
     room.update()
+  }
+
+  handleTravellerError(error: unknown, traveller: Traveller) {
+    this.emit('debug', `traveller@error ${error}`)
+
+    if (error instanceof RoomNotFoundError) {
+      traveller.send<ErrorSignal>('error', { code: 'room_not_found' })
+    } else {
+      this.emit('error', error as Error)
+    }
   }
 
   //
