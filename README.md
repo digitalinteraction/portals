@@ -18,16 +18,10 @@ tailored for Node.js and [ws](https://github.com/websockets/ws).
 
 ```js
 import http from 'http'
-import path from 'path'
-import url from 'url'
 import express from 'express'
-
 import { NodePortalServer } from '@openlab/portals/node-server.js'
 
 const app = express()
-  .use(express.static(path.dirname(url.fileURLToPath(import.meta.url))))
-  .use(express.text())
-
 const rooms = ['coffee-chat', 'home', 'misc']
 const server = http.createServer(app)
 const portal = new NodePortalServer({ server, path: '/portal', rooms })
