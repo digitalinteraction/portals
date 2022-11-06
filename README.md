@@ -232,6 +232,7 @@ Used as part of the WebRTC calling, [more info](https://developer.mozilla.org/en
 - what to do with signaller 'disconnection' / 'reconnection' events
   - rename current portal events to 'opened' / 'closed' ?
 - better name for 'signaller'
+- enable custom signals for library-users to use
 
 ## Non-goals
 
