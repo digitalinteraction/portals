@@ -2,6 +2,14 @@
 
 This file contains notable changes to the project
 
+## _next_
+
+**features**
+
+- `Portal` now emits an `IceCandidateError` if that occurred on the `RTCPeerConnection`, which is essentially a
+  [RTCPeerConnectionIceErrorEvent](https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnectionIceErrorEvent)
+- "errors" are now a part of the "lib" module
+
 ## 0.2.1
 
 **fixes**

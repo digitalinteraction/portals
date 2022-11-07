@@ -1,5 +1,9 @@
-import { ErrorSignal, EventEmitter, EventListener } from '../lib.js'
-import { RoomNotFoundError } from './errors.js'
+import {
+  ErrorSignal,
+  EventEmitter,
+  EventListener,
+  RoomNotFoundError,
+} from '../lib.js'
 import { Room } from './room.js'
 import { PortalMessage, Traveller } from './types.js'
 

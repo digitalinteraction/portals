@@ -3,6 +3,7 @@ import {
   DescriptionSignal,
   EventEmitter,
   EventListener,
+  IceCandidateError,
   RoomMember,
 } from '../lib.js'
 import { SignalingChannel } from './signaller.js'
@@ -67,6 +68,13 @@ export class Portal {
     }
     this.peer.ontrack = (event) => {
       this.emit('track', event)
+    }
+    this.peer.onicecandidateerror = (event) => {
+      if (event instanceof RTCPeerConnectionIceErrorEvent) {
+        this.emit('error', new IceCandidateError(event))
+      } else {
+        this.emit('error', new Error('Ice failed: ' + event))
+      }
     }
 
     this.signaler.addEventListener('description', this.onDescription)

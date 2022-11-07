@@ -75,6 +75,11 @@ async function main() {
         // Render the track somehow
       }
     })
+
+    portal.addEventListener('error', (error) => {
+      // Handle an error connecting to this peer
+      // e.g. present the error to the user
+    })
   })
 
   // Stop rendering a peer that has disconnected
